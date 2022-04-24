@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!--Spring框架beans.xml配置文件的基础:一个bean和一个对应的类,然后对bean进行统一的管理 -->
+
+    <bean id="myPerson" class="org.lzw.base.bean.Person">
+        <property name="name" value="fsx"/>
+        <property name="age" value="18"/>
+    </bean>
+</beans>

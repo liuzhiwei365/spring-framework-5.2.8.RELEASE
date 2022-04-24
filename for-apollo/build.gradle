@@ -1,0 +1,29 @@
+plugins {
+    id 'java'
+}
+
+group 'org.springframework'
+version '5.2.8.RELEASE'
+
+dependencies {
+    /**
+     implementation("${group}:spring-context:${version}")
+     implementation("${group}:spring-context-indexer:${version}")
+     implementation("${group}:spring-context-support:${version}")
+     implementation("${group}:spring-core:${version}")
+     implementation("${group}:spring-beans:${version}")
+     implementation("${group}:spring-web:${version}")
+     implementation("${group}:spring-aop:${version}")
+     implementation("${group}:spring-expression:${version}")  */
+
+    compile project(':spring-context')
+    compile project(':spring-context-indexer')
+    compile project(':spring-context-support')
+    compile project(':spring-core')
+    compile project(':spring-beans')
+    compile project(':spring-aop')
+    compile project(':spring-aspects')
+    //compile project(':spring-web')
+    compile project(':spring-expression')
+    implementation group: 'com.alibaba.cloud', name: 'spring-cloud-starter-alibaba-nacos-discovery', version: '2021.1'
+}
