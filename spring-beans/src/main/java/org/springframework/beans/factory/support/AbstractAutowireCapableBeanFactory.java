@@ -557,7 +557,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			instanceWrapper = this.factoryBeanInstanceCache.remove(beanName);
 		}
 		if (instanceWrapper == null) {
-			/** 1 如果存在工厂方法，那么用工厂方法进行实例化
+			/**
+			 *  1 如果存在工厂方法，那么用工厂方法进行实例化, 用@Bean 注解的方法都是工厂方法
 			 *  2 如果一个类有多个构造函数，根据参数判断用那个构造函数实例化(每个构造函数有不同的参数)
 			 *  3 以上二中情况都不满足，用默认的构造函数来进行实例化
 			 * */
@@ -1194,19 +1195,27 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * @see #instantiateBean
 	 */
 	protected BeanWrapper createBeanInstance(String beanName, RootBeanDefinition mbd, @Nullable Object[] args) {
-		// Make sure bean class is actually resolved at this point.
+
+		// 得到bean定义 的class ,使用类加载器根据设置的 class 属性或者根据 className 来解析 Class
 		Class<?> beanClass = resolveBeanClass(mbd, beanName);
 
+		// 如果beanclass不是public 且不允许访问非public方法和属性则抛出异常
 		if (beanClass != null && !Modifier.isPublic(beanClass.getModifiers()) && !mbd.isNonPublicAccessAllowed()) {
 			throw new BeanCreationException(mbd.getResourceDescription(), beanName,
 					"Bean class isn't public, and non-public access not allowed: " + beanClass.getName());
 		}
 
+		// 这是Spring提供给开发者的扩展点,当一个BeanDefinition中存在一个Supplier类的时候,
+		// Spring就利用这个类的get方法来获取实例
 		Supplier<?> instanceSupplier = mbd.getInstanceSupplier();
 		if (instanceSupplier != null) {
 			return obtainFromSupplier(instanceSupplier, beanName);
 		}
 
+		// 通过factoryMethod实例化这个bean
+		// 1.factorMethod这个名称在xml中还是比较常见的, 即通过工厂方法来创建bean对象
+		// 2.如果一个bean对象是由@Bean注解创建的, 也会走instantiateUsingFactoryMethod方法来创建
+		// 标注了 @Bean注解的方法名 ,也被spring认为是工厂方法名
 		if (mbd.getFactoryMethodName() != null) {
 			return instantiateUsingFactoryMethod(beanName, mbd, args);
 		}
@@ -1231,8 +1240,14 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			}
 		}
 
-		// Candidate constructors for autowiring?
+		// 从 SmartInstantiationAwareBeanPostProcessor 找出决定要使用的构造器,
+		// AutowiredAnnotationBeanPostProcessor是其主要实现逻辑
 		Constructor<?>[] ctors = determineConstructorsFromBeanPostProcessors(beanClass, beanName);
+		/**
+		 *    1 BeanDefinition的autowire属性为AUTOWIRE_CONSTRUCTOR xml中使用了 autowire="constructor"
+		 *    2 BeanDefinition中指定了构造方法参数值 使用了 <constructor-arg>标签
+		 *    3 在getBean()时指定了args
+		 * */
 		if (ctors != null || mbd.getResolvedAutowireMode() == AUTOWIRE_CONSTRUCTOR ||
 				mbd.hasConstructorArgumentValues() || !ObjectUtils.isEmpty(args)) {
 			return autowireConstructor(beanName, mbd, ctors, args);
@@ -1244,7 +1259,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			return autowireConstructor(beanName, mbd, ctors, null);
 		}
 
-		// No special handling: simply use no-arg constructor.
+		// 用无参的构造方法来实例化bean
 		return instantiateBean(beanName, mbd);
 	}
 
@@ -1317,6 +1332,10 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			for (BeanPostProcessor bp : getBeanPostProcessors()) {
 				if (bp instanceof SmartInstantiationAwareBeanPostProcessor) {
 					SmartInstantiationAwareBeanPostProcessor ibp = (SmartInstantiationAwareBeanPostProcessor) bp;
+
+                    /**真正有逻辑的是 AutowiredAnnotationBeanPostProcessor ，其他的类 都是空实现
+					 *  决定使用哪个构造器来实例化
+					 * */
 					Constructor<?>[] ctors = ibp.determineCandidateConstructors(beanClass, beanName);
 					if (ctors != null) {
 						return ctors;
